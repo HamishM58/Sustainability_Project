@@ -80,15 +80,23 @@ AS726X sensor;
 void setup() {
   Wire.begin();
   Serial.begin(115200);
-  
   sensor.begin();
-  sensor.enableBulb();
 }
 
 void loop() {
-  delay(300);
+  TakeReading();
+  PrintLevels();
+}
+
+void TakeReading(){
+  sensor.enableBulb();
+  delay(500);
   sensor.takeMeasurements();
-    //Near IR readings
+  delay(500);
+  sensor.disableBulb();
+}
+
+void PrintReading(){
   Serial.print("R:");
   Serial.println(sensor.getCalibratedR(), 2);
   Serial.print("S:");
@@ -101,7 +109,22 @@ void loop() {
   Serial.println(sensor.getCalibratedV(), 2);
   Serial.print("W:");
   Serial.println(sensor.getCalibratedW(), 2);
+  Serial.println();
+}
 
-  Serial.print("tempC:");
-  Serial.println((sensor.getTemperatureF()-32*1.8));
+void PrintLevels(){
+  float total = sensor.getCalibratedR() + sensor.getCalibratedS() + sensor.getCalibratedT() + sensor.getCalibratedU() + sensor.getCalibratedV() + sensor.getCalibratedW();
+  Serial.print("R:");
+  Serial.println(sensor.getCalibratedR()/total, 2);
+  Serial.print("S:");
+  Serial.println(sensor.getCalibratedS()/total, 2);
+  Serial.print("T:");
+  Serial.println(sensor.getCalibratedT()/total, 2);
+  Serial.print("U:");
+  Serial.println(sensor.getCalibratedU()/total, 2);
+  Serial.print("V:");
+  Serial.println(sensor.getCalibratedV()/total, 2);
+  Serial.print("W:");
+  Serial.println(sensor.getCalibratedW()/total, 2);
+  Serial.println();
 }

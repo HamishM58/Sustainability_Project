@@ -1,101 +1,73 @@
 #include <Arduino.h>
 #include <AccelStepper.h>
-#include <ESP32Servo.h>
-
 //Conveyor
-#define ConveyorDirPin 1
-#define ConveyorStpPin 2
-#define ConveyorEnbPin 3
-#define ConveyorSpeed 200
-#define ConveyorAcceleration 100
-#define ConveyorDiametermm 200
+#define ConveyorDirPin 10
+#define ConveyorStpPin 11
+
+#define ConveyorSpeed 300
+#define ConveyorAcceleration 2000
+#define ConveyorDiametermm 30.5
+
+//Wiper
+#define WiperDirPin 3
+#define WiperStpPin 46
+
+#define WiperBounds 600
+
+#define WiperSpeed 1500
+#define WiperAcceleration 2000
+
+
 
 AccelStepper Conveyor(AccelStepper::DRIVER,ConveyorStpPin,ConveyorDirPin);
-
-//Paddles
-#define OpenPosition 125
-#define ServoMin 1000
-#define ServoMax 2000
-#define PaddlePWMPin1 1
-#define PaddlePWMPin2 2
-#define PaddlePWMPin3 3
-#define PaddlePWMPin4 4
-#define PaddlePWMPin5 5
-
-Servo Paddle1;
-Servo Paddle2;
-Servo Paddle3;
-Servo Paddle4;
-Servo Paddle5;
+AccelStepper Wiper(AccelStepper::DRIVER,WiperStpPin,WiperDirPin);
 
 void setup() {
-  Conveyor.setEnablePin(ConveyorEnbPin);
   Conveyor.setAcceleration(ConveyorAcceleration);
   Conveyor.setMaxSpeed(ConveyorSpeed);
 
-  Paddle1.setPeriodHertz(50);
-  Paddle2.setPeriodHertz(50);
-  Paddle3.setPeriodHertz(50);
-  Paddle4.setPeriodHertz(50);
-  Paddle5.setPeriodHertz(50);
+  Wiper.setAcceleration(WiperAcceleration);
+  Wiper.setMaxSpeed(WiperSpeed);
 
-  Paddle1.attach(PaddlePWMPin1, ServoMin, ServoMax);
-  Paddle2.attach(PaddlePWMPin2, ServoMin, ServoMax);
-  Paddle3.attach(PaddlePWMPin3, ServoMin, ServoMax);
-  Paddle4.attach(PaddlePWMPin4, ServoMin, ServoMax);
-  Paddle5.attach(PaddlePWMPin5, ServoMin, ServoMax);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  Conveyor.run();
+  MoveConveyor(150,1);
+  Wipe(true);
+  MoveConveyor(200,1);
+  Wipe(true);
+
+  while(true){}
 }
 
-void MoveConveyor(int mm, bool dir){
+void Wipe(bool dir){
   if(dir){
-    Conveyor.move((PI*ConveyorDiametermm/mm)*360);
+    Wiper.move(WiperBounds);
+    Serial.println("Wipe Left");
   }
   else{
-    Conveyor.move(-(PI*ConveyorDiametermm/mm)*360);
+    Wiper.move(-(WiperBounds));
+    Serial.println("Wipe Right");
+  }
+  while(Wiper.isRunning()){
+    Wiper.run();
+  }
+  delay(100);
+  Wiper.moveTo(0);
+  while(Wiper.isRunning()){
+    Wiper.run();
+  }
+}
+
+void MoveConveyor(float mm, bool dir){
+  if(dir){
+    Conveyor.move((mm/(PI*ConveyorDiametermm))*200);
+  }
+  else{
+    Conveyor.move(-(mm/(PI*ConveyorDiametermm))*200);
+  }
+  while(Conveyor.isRunning()){
+    Conveyor.run();
   }
 } 
 
-void OpenPaddle(int paddle){
-  switch(paddle){
-    case 1:
-      Paddle1.write(OpenPosition);
-      break;
-    case 2:
-      Paddle2.write(OpenPosition);
-      break;
-    case 3:
-      Paddle3.write(OpenPosition);
-      break;
-    case 4:
-      Paddle4.write(OpenPosition);
-      break;
-    case 5:
-      Paddle5.write(OpenPosition);
-      break;
-  }
-}
-
-void ClosePaddle(int paddle){
-  switch(paddle){
-    case 1:
-      Paddle1.write(0);
-      break;
-    case 2:
-      Paddle2.write(0);
-      break;
-    case 3:
-      Paddle3.write(0);
-      break;
-    case 4:
-      Paddle4.write(0);
-      break;
-    case 5:
-      Paddle5.write(0);
-      break;
-  }
-}

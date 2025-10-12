@@ -1,5 +1,38 @@
 #include <Arduino.h>
 #include <AccelStepper.h>
+
+//WiFI
+#include <WiFi.h>
+#include <WebServer.h>
+
+WebServer server(80);
+void handleRoot() {
+  server.send(200, "text/plain", "Ready");
+}
+void handleGet() {
+  if (server.hasArg("data")) {
+    String data = server.arg("data");
+    Serial.println(data);
+    Sort(data.toInt());
+  }
+  server.send(200, "text/plain", "Data Received");
+}
+void handlePost() {
+  server.send(200, "text/plain", "Processing Data");
+}
+void handleUpload() {
+  HTTPUpload& upload = server.upload();
+  if (upload.status == UPLOAD_FILE_START) {
+    Serial.println("Receiving data:");
+  } else if (upload.status == UPLOAD_FILE_WRITE) {
+    Serial.write(upload.buf, upload.currentSize);
+  } else if (upload.status == UPLOAD_FILE_END) {
+    server.send(200, "text/plain", "Data: ");
+  }
+}
+
+
+
 //Conveyor
 #define ConveyorDirPin 10
 #define ConveyorStpPin 11
@@ -22,22 +55,34 @@
 AccelStepper Conveyor(AccelStepper::DRIVER,ConveyorStpPin,ConveyorDirPin);
 AccelStepper Wiper(AccelStepper::DRIVER,WiperStpPin,WiperDirPin);
 
+
 void setup() {
+  Serial.begin(115200);
+
   Conveyor.setAcceleration(ConveyorAcceleration);
   Conveyor.setMaxSpeed(ConveyorSpeed);
 
   Wiper.setAcceleration(WiperAcceleration);
   Wiper.setMaxSpeed(WiperSpeed);
 
+  //Wifi
+  WiFi.softAP("ESP32");
+  server.on("/", handleRoot);
+  server.on("/get", HTTP_GET, handleGet);
+  server.on("/post", HTTP_POST, handlePost, handleUpload);
+  server.begin();
 }
 
 void loop() {
-  MoveConveyor(150,1);
-  Wipe(true);
-  MoveConveyor(200,1);
-  Wipe(true);
+  server.handleClient();
 
-  while(true){}
+  if(Serial.available()){
+    int number = Serial.parseInt();
+    if(number>0){
+      Serial.println(String(number));
+      Sort(number);
+    }
+  }
 }
 
 void Wipe(bool dir){
@@ -69,5 +114,49 @@ void MoveConveyor(float mm, bool dir){
   while(Conveyor.isRunning()){
     Conveyor.run();
   }
-} 
+}
 
+void Sort(int bucket){
+  switch(bucket){
+    case 1:
+      MoveConveyor(50,1);
+      Wipe(1);
+      break;
+    case 2:
+      MoveConveyor(100,1);
+      Wipe(1);
+      break;
+    case 3:
+      MoveConveyor(150,1);
+      Wipe(1);
+      break;
+    case 4:
+      MoveConveyor(200,1);
+      Wipe(1);
+      break;
+    case 5:
+      MoveConveyor(250,1);
+      Wipe(1);
+      break;
+    case 6:
+      MoveConveyor(50,1);
+      Wipe(0);
+      break;
+    case 7:
+      MoveConveyor(100,1);
+      Wipe(0);
+      break;
+    case 8:
+      MoveConveyor(150,1);
+      Wipe(0);
+      break;
+    case 9:
+      MoveConveyor(200,1);
+      Wipe(0);
+      break;
+    default:
+      MoveConveyor(250,1);
+      Wipe(0);
+      break;
+  }
+}

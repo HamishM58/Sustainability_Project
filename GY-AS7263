@@ -74,18 +74,25 @@
 */
 
 #include "AS726X.h"
+#include "Wire.h"
 
 AS726X sensor;
+int bbyte = 0;
 
 void setup() {
   Wire.begin();
+  delay(300);
   Serial.begin(115200);
+  while(!Serial);
   sensor.begin();
+  delay(300);
 }
 
 void loop() {
-  TakeReading();
-  PrintLevels();
+  if (Serial.available() > 0) {
+    bbyte = Serial.read();
+    IdentifyPlastic();
+  }
 }
 
 void TakeReading(){
@@ -112,19 +119,29 @@ void PrintReading(){
   Serial.println();
 }
 
-void PrintLevels(){
-  float total = sensor.getCalibratedR() + sensor.getCalibratedS() + sensor.getCalibratedT() + sensor.getCalibratedU() + sensor.getCalibratedV() + sensor.getCalibratedW();
-  Serial.print("R:");
-  Serial.println(sensor.getCalibratedR()/total, 2);
-  Serial.print("S:");
-  Serial.println(sensor.getCalibratedS()/total, 2);
-  Serial.print("T:");
-  Serial.println(sensor.getCalibratedT()/total, 2);
-  Serial.print("U:");
-  Serial.println(sensor.getCalibratedU()/total, 2);
-  Serial.print("V:");
-  Serial.println(sensor.getCalibratedV()/total, 2);
-  Serial.print("W:");
-  Serial.println(sensor.getCalibratedW()/total, 2);
-  Serial.println();
+void IdentifyPlastic(){
+  TakeReading();
+  delay(100);
+  float RS = sensor.getCalibratedR()/sensor.getCalibratedS();
+  float ST = sensor.getCalibratedS()/sensor.getCalibratedT();
+  float TU = sensor.getCalibratedT()/sensor.getCalibratedU();
+  float UV = sensor.getCalibratedU()/sensor.getCalibratedV();
+  float VW = sensor.getCalibratedV()/sensor.getCalibratedW();
+  float Vector[5] = {RS,ST,TU,UV,VW};
+  Serial.println(String(Vector[0])+" "+String(Vector[1])+" "+String(Vector[2])+" "+String(Vector[3])+" "+String(Vector[4]));
+  float VectorBelt[5] = {5.465,1.058,3.338,1.625,2.178};
+  float VectorHDPE[5] = {3.835,1.67,2.828,1.518,1.7};
+
+  Serial.print("BELT: ");
+  Serial.println(String(Edistance(Vector, VectorBelt)));
+  Serial.print("HDPE: ");
+  Serial.println(String(Edistance(Vector, VectorHDPE)));
+}
+float Edistance(float* A, float* B) {
+    float sum = 0;
+    for (int i = 0; i < 5; i++) {
+        float diff = A[i] - B[i];
+        sum += diff * diff;
+    }
+    return sqrt(sum);
 }

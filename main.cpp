@@ -34,8 +34,8 @@ void handleUpload() {
 
 
 //Conveyor
-#define ConveyorDirPin 10
-#define ConveyorStpPin 46
+#define ConveyorDirPin 13
+#define ConveyorStpPin 12
 
 #define ConveyorSpeed 300
 #define ConveyorAcceleration 2000
@@ -43,7 +43,7 @@ void handleUpload() {
 
 //Wiper
 #define WiperDirPin 11
-#define WiperStpPin 3
+#define WiperStpPin 10
 
 #define WiperBounds 600
 

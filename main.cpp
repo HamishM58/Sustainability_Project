@@ -35,15 +35,15 @@ void handleUpload() {
 
 //Conveyor
 #define ConveyorDirPin 10
-#define ConveyorStpPin 11
+#define ConveyorStpPin 46
 
 #define ConveyorSpeed 300
 #define ConveyorAcceleration 2000
 #define ConveyorDiametermm 30.5
 
 //Wiper
-#define WiperDirPin 3
-#define WiperStpPin 46
+#define WiperDirPin 11
+#define WiperStpPin 3
 
 #define WiperBounds 600
 
@@ -75,7 +75,6 @@ void setup() {
 
 void loop() {
   server.handleClient();
-
   if(Serial.available()){
     int number = Serial.parseInt();
     if(number>0){

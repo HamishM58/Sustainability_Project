@@ -129,13 +129,23 @@ void IdentifyPlastic(){
   float VW = sensor.getCalibratedV()/sensor.getCalibratedW();
   float Vector[5] = {RS,ST,TU,UV,VW};
   Serial.println(String(Vector[0])+" "+String(Vector[1])+" "+String(Vector[2])+" "+String(Vector[3])+" "+String(Vector[4]));
+
   float VectorBelt[5] = {5.465,1.058,3.338,1.625,2.178};
   float VectorHDPE[5] = {3.835,1.67,2.828,1.518,1.7};
+  float VectorPP[5] = {0,0,0,0,0};
+  float VectorPETE[5] = {0,0,0,0,0};
+  float VectorPA[5] = {0,0,0,0,0};
 
   Serial.print("BELT: ");
   Serial.println(String(Edistance(Vector, VectorBelt)));
   Serial.print("HDPE: ");
   Serial.println(String(Edistance(Vector, VectorHDPE)));
+  Serial.print("PP: ");
+  Serial.println(String(Edistance(Vector, VectorPP)));
+  Serial.print("PETE: ");
+  Serial.println(String(Edistance(Vector, VectorPETE)));
+  Serial.print("PA: ");
+  Serial.println(String(Edistance(Vector, VectorPA)));
 }
 float Edistance(float* A, float* B) {
     float sum = 0;

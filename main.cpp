@@ -1,6 +1,9 @@
 #include <Arduino.h>
 #include <AccelStepper.h>
 
+#include "AS726X.h"
+#include "Wire.h"
+
 //WiFI
 #include <WiFi.h>
 #include <WebServer.h>
@@ -8,6 +11,7 @@
 WebServer server(80);
 void handleRoot() {
   server.send(200, "text/plain", "Ready");
+  IdentifyPlastic();
 }
 void handleGet() {
   if (server.hasArg("data")) {
@@ -56,8 +60,20 @@ AccelStepper Conveyor(AccelStepper::DRIVER,ConveyorStpPin,ConveyorDirPin);
 AccelStepper Wiper(AccelStepper::DRIVER,WiperStpPin,WiperDirPin);
 
 
+AS726X sensor;
+int bbyte = 0;
+
 void setup() {
   Serial.begin(115200);
+  while(!Serial);
+
+  Wire.begin();
+  while(Scan()==false);
+  Serial.println("I2C connect!");
+  delay(1000);
+  while(sensor.begin()==false);
+  Serial.println("AS726X Sensor connect!");
+  delay(1000);
 
   Conveyor.setAcceleration(ConveyorAcceleration);
   Conveyor.setMaxSpeed(ConveyorSpeed);
@@ -75,23 +91,171 @@ void setup() {
 
 void loop() {
   server.handleClient();
-  if(Serial.available()){
-    int number = Serial.parseInt();
-    if(number>0){
-      Serial.println(String(number));
-      Sort(number);
-    }
+  if (Serial.available() > 0) {
+    bbyte = Serial.read();
+    IdentifyPlastic();
   }
 }
 
+void TakeReading(){
+  delay(1000);
+  sensor.enableBulb();
+  delay(1000);
+  sensor.takeMeasurements();
+  delay(1000);
+  sensor.disableBulb();
+}
+
+void PrintReading(){
+  Serial.print("R:");
+  Serial.println(sensor.getCalibratedR(), 2);
+  Serial.print("S:");
+  Serial.println(sensor.getCalibratedS(), 2);
+  Serial.print("T:");
+  Serial.println(sensor.getCalibratedT(), 2);
+  Serial.print("U:");
+  Serial.println(sensor.getCalibratedU(), 2);
+  Serial.print("V:");
+  Serial.println(sensor.getCalibratedV(), 2);
+  Serial.print("W:");
+  Serial.println(sensor.getCalibratedW(), 2);
+  Serial.println();
+}
+
+void IdentifyPlastic(){
+  TakeReading();
+  delay(100);
+  float R = sensor.getCalibratedR();
+  float S = sensor.getCalibratedS();
+  float T = sensor.getCalibratedT();
+  float U = sensor.getCalibratedU();
+  float V = sensor.getCalibratedV();
+  float W = sensor.getCalibratedW();
+
+  float RS = R/S;
+  float ST = S/T;
+  float TU = T/U;
+  float UV = U/V;
+  float VW = V/W;
+
+  float Vector[5] = {RS,ST,TU,UV,VW};
+  //Serial.println(String(Vector[0])+" "+String(Vector[1])+" "+String(Vector[2])+" "+String(Vector[3])+" "+String(Vector[4]));
+
+  float VectorBelt[5] = {5.035,0.9175,3.4725,2.0175,2.31};
+  float VectorHDPE[5] = {4.435,1.7025,3.13,1.34,1.6375};
+  float VectorPP[5] = {18.442,0.598,6.2,1.072,2.586};
+  float VectorPLA[5] = {2.964,2.396,2.39,1.364,1.498};
+  float VectorPETG[5] = {1,1,1,1,1};
+  float VectorABS[5] = {1,1,1,1,1};
+  //float VectorERROR[5] = {0,0,0,0,0};
+
+  //float VectorPETE[5] = {5.45,0.9775,4.57,1.44,1.925};
+  
+
+  float BELT = Edistance(Vector, VectorBelt);
+  float HDPE = Edistance(Vector, VectorHDPE);
+  float PP = Edistance(Vector, VectorPP);
+  float PLA = Edistance(Vector, VectorPLA);
+  float PETG = Edistance(Vector, VectorPETG);
+  float ABS = Edistance(Vector, VectorABS);
+
+  float minimum = min(min(min(BELT, HDPE),min(PP, PLA)),min(PETG,ABS));
+  if(minimum == BELT){
+    Serial.println("BELT");
+  }
+  else if(minimum == HDPE){
+    Serial.println("HDPE");
+    Sort(1);
+  }
+  else if(minimum == PP){
+    Serial.println("PP");
+    Sort(2);
+  }
+  else if(minimum == PLA){
+    Serial.println("PLA");
+    Sort(3);
+  }
+  else if(minimum == PETG){
+    Serial.println("PETG");
+    Sort(4);
+  }
+  else if(minimum == ABS){
+    Serial.println("ABS");
+    Sort(5);
+  }
+  else{
+    Serial.println("Error, Not determined. Catch Bin");
+    Sort(10);
+  }
+
+
+  /*
+  Serial.print("BELT: ");
+  Serial.println(String(BELT));
+  Serial.print("HDPE: ");
+  Serial.println(String(HDPE));
+  Serial.print("PP: ");
+  Serial.println(String(PP));
+  Serial.print("PLA: ");
+  Serial.println(String(PLA));
+  Serial.print("PA: ");
+  Serial.println(String(PA));
+  */
+}
+float Edistance(float* A, float* B) {
+    float sum = 0;
+    for (int i = 0; i < 5; i++) {
+        float diff = A[i] - B[i];
+        sum += diff * diff;
+    }
+    return sqrt(sum);
+}
+
+
+bool Scan(){
+  byte error, address;
+  int nDevices;
+  Serial.println("Scanning...");
+  nDevices = 0;
+  for(address = 1; address < 127; address++ )
+  {
+    // The i2c_scanner uses the return value of
+    // the Write.endTransmisstion to see if
+    // a device did acknowledge to the address.
+    Wire.beginTransmission(address);
+    error = Wire.endTransmission();
+    if (error == 0)
+    {
+      Serial.print("I2C device found at address 0x");
+      if (address<16)
+      Serial.print("0");
+      Serial.println(address,HEX);
+      return true;
+      nDevices++;
+    }
+    else if (error==4)
+    {
+      Serial.print("Unknown error at address 0x");
+      if (address<16)
+        Serial.print("0");
+      Serial.println(address,HEX);
+    }    
+  }
+  if (nDevices == 0){
+    Serial.println("No I2C devices found\n");
+    return false;
+  }
+  else{
+    Serial.println("done\n");
+  }
+  delay(1000);
+}
 void Wipe(bool dir){
   if(dir){
     Wiper.move(WiperBounds);
-    Serial.println("Wipe Left");
   }
   else{
     Wiper.move(-(WiperBounds));
-    Serial.println("Wipe Right");
   }
   while(Wiper.isRunning()){
     Wiper.run();

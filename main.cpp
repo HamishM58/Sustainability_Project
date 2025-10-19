@@ -47,7 +47,7 @@ void handleUpload() {
 
 //Wiper
 #define WiperDirPin 11
-#define WiperStpPin 10
+#define WiperStpPin 15
 
 #define WiperBounds 600
 

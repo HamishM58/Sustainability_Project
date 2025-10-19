@@ -72,7 +72,6 @@
   float getCalibratedV();
   float getCalibratedW();
 */
-
 #include "AS726X.h"
 #include "Wire.h"
 
@@ -80,12 +79,14 @@ AS726X sensor;
 int bbyte = 0;
 
 void setup() {
-  Wire.begin();
-  delay(300);
   Serial.begin(115200);
   while(!Serial);
+
+  Wire.begin();
+  while(Scan()==false);
+  delay(1000);
   sensor.begin();
-  delay(300);
+  delay(1000);
 }
 
 void loop() {
@@ -97,9 +98,9 @@ void loop() {
 
 void TakeReading(){
   sensor.enableBulb();
-  delay(500);
+  delay(1000);
   sensor.takeMeasurements();
-  delay(500);
+  delay(1000);
   sensor.disableBulb();
 }
 
@@ -154,4 +155,46 @@ float Edistance(float* A, float* B) {
         sum += diff * diff;
     }
     return sqrt(sum);
+}
+
+
+bool Scan(){
+  byte error, address;
+  int nDevices;
+  Serial.println("Scanning...");
+  nDevices = 0;
+  for(address = 1; address < 127; address++ )
+  {
+    // The i2c_scanner uses the return value of
+    // the Write.endTransmisstion to see if
+    // a device did acknowledge to the address.
+    Wire.beginTransmission(address);
+    error = Wire.endTransmission();
+    if (error == 0)
+    {
+      Serial.print("I2C device found at address 0x");
+      if (address<16)
+      Serial.print("0");
+      Serial.print(address,HEX);
+      Serial.println("  !");
+      return true;
+ 
+      nDevices++;
+    }
+    else if (error==4)
+    {
+      Serial.print("Unknown error at address 0x");
+      if (address<16)
+        Serial.print("0");
+      Serial.println(address,HEX);
+    }    
+  }
+  if (nDevices == 0){
+    Serial.println("No I2C devices found\n");
+    return false;
+  }
+  else{
+    Serial.println("done\n");
+  }
+  delay(1000);
 }

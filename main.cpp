@@ -145,13 +145,16 @@ void IdentifyPlastic(){
   float VectorHDPE[5] = {4.435,1.7025,3.13,1.34,1.6375};
   float VectorPP[5] = {18.442,0.598,6.2,1.072,2.586};
   float VectorPLA[5] = {2.964,2.396,2.39,1.364,1.498};
-  float VectorPETG[5] = {1,1,1,1,1};
-  float VectorABS[5] = {1,1,1,1,1};
+  float VectorPETG[5] = {2.648,2.25,2.624,1.516,1.506};
+  float VectorABS[5] = {3.912,2.002,2.664,1.298,1.732};
+
+  float VectorPETGB[5] = {11.712,0.434,2.37,1.926,3.44};
+  float VectorPLAR[5] = {2.916,2.216,2.564,1.506,1.5};
   //float VectorERROR[5] = {0,0,0,0,0};
 
   //float VectorPETE[5] = {5.45,0.9775,4.57,1.44,1.925};
   
-
+  
   float BELT = Edistance(Vector, VectorBelt);
   float HDPE = Edistance(Vector, VectorHDPE);
   float PP = Edistance(Vector, VectorPP);
@@ -159,7 +162,11 @@ void IdentifyPlastic(){
   float PETG = Edistance(Vector, VectorPETG);
   float ABS = Edistance(Vector, VectorABS);
 
-  float minimum = min(min(min(BELT, HDPE),min(PP, PLA)),min(PETG,ABS));
+  float PLAR = Edistance(Vector, VectorPLAR);
+  float PETGB = Edistance(Vector, VectorPETGB);
+
+  //
+  float minimum = min(min(min(min(BELT, HDPE),min(PP, PLA)),min(PETG,ABS)),min(PLAR,PETGB));
   if(minimum == BELT){
     Serial.println("BELT");
   }
@@ -183,9 +190,17 @@ void IdentifyPlastic(){
     Serial.println("ABS");
     Sort(5);
   }
+  else if(minimum == PETGB){
+    Serial.println("PETGB");
+    Sort(4);
+  }
+  else if(minimum == PLAR){
+    Serial.println("PLAR");
+    Sort(3);
+  }
   else{
     Serial.println("Error, Not determined. Catch Bin");
-    Sort(10);
+    Sort(0);
   }
 
 

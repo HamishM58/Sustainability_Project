@@ -332,6 +332,8 @@ void Sort(int bucket){
       MoveConveyor(200,1);
       Wipe(0);
       break;
+    case 15:
+      MoveConveyor(35,1);
     default:
       MoveConveyor(250,1);
       Wipe(0);
